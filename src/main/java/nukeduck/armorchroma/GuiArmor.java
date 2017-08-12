@@ -1,19 +1,42 @@
 package nukeduck.armorchroma;
 
 import static nukeduck.armorchroma.ArmorChroma.mc;
-import static org.lwjgl.opengl.GL11.*;
-
+import static org.lwjgl.opengl.GL11.GL_BLEND;
+import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_CURRENT_BIT;
+import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_ENABLE_BIT;
+import static org.lwjgl.opengl.GL11.GL_EQUAL;
+import static org.lwjgl.opengl.GL11.GL_LIGHTING;
+import static org.lwjgl.opengl.GL11.GL_ONE;
+import static org.lwjgl.opengl.GL11.GL_SRC_COLOR;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_BIT;
+import static org.lwjgl.opengl.GL11.GL_TRANSFORM_BIT;
+import static org.lwjgl.opengl.GL11.GL_ZERO;
+import static org.lwjgl.opengl.GL11.glColor4f;
+import static org.lwjgl.opengl.GL11.glDepthFunc;
+import static org.lwjgl.opengl.GL11.glDisable;
+import static org.lwjgl.opengl.GL11.glEnable;
+import static org.lwjgl.opengl.GL11.glMatrixMode;
+import static org.lwjgl.opengl.GL11.glPopAttrib;
+import static org.lwjgl.opengl.GL11.glPopMatrix;
+import static org.lwjgl.opengl.GL11.glPushAttrib;
+import static org.lwjgl.opengl.GL11.glPushMatrix;
+import static org.lwjgl.opengl.GL11.glRotatef;
+import static org.lwjgl.opengl.GL11.glScalef;
+import static org.lwjgl.opengl.GL11.glTranslatef;
 import javax.vecmath.Vector2d;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
-import net.minecraft.item.ItemArmor.ArmorMaterial;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.GuiIngameForge;
@@ -72,9 +95,9 @@ public class GuiArmor extends Gui {
 		glPushAttrib(GL_TEXTURE_BIT);
 		mc.getTextureManager().bindTexture(ARMOR_ICONS);
 
-		for(int i = 0; i < mc.thePlayer.inventory.armorInventory.length; i++) {
-			ItemStack stack = mc.thePlayer.inventory.armorInventory[i];
-			if(stack == null || stack.getItem() == null) continue;
+		for(int i = 0; i < mc.player.inventory.armorInventory.size(); i++) {
+			ItemStack stack = mc.player.inventory.armorInventory.get(i);
+			if (stack.isEmpty()) continue; // if(stack == null || stack.getItem() == null) continue;
 
 			boolean addBreak = this.setState(stack, i);
 			this.renderArmorBarPart(left, addBreak);
@@ -104,9 +127,9 @@ public class GuiArmor extends Gui {
 	public boolean setState(ItemStack stack, int slot) {
 		Item item = stack.getItem();
 		boolean addBreak = ArmorChroma.INSTANCE.config.alwaysBreak ||
-				this.glint != (this.glint = item.hasEffect(stack, 0));
+				this.glint != (this.glint = item.hasEffect(stack));
 
-		boolean leather = item instanceof ItemArmor && (item == Items.leather_helmet || item == Items.leather_chestplate || item == Items.leather_leggings || item == Items.leather_boots);
+		boolean leather = item instanceof ItemArmor && (item == Items.LEATHER_HELMET || item == Items.LEATHER_CHESTPLATE || item == Items.LEATHER_LEGGINGS || item == Items.LEATHER_BOOTS);
 		if(!ArmorChroma.INSTANCE.config.renderColor && leather) {
 			// Use pre-colored leather
 			addBreak |= this.materialIndex != (this.materialIndex = ArmorChroma.INSTANCE.config.iconLeather);
@@ -114,7 +137,8 @@ public class GuiArmor extends Gui {
 		} else {
 			addBreak |= this.materialIndex != (this.materialIndex = ArmorChroma.INSTANCE.config.getIcon(stack));
 			if(leather) {
-				addBreak |= this.color != (this.color = item.getColorFromItemStack(stack, 0));
+				addBreak |= this.color != (this.color = mc.getItemColors().getColorFromItemstack(stack, 0));
+//				addBreak |= this.color != (this.color = item.getColorFromItemStack(stack, 0));
 			} else {
 				addBreak |= this.color != (this.color = 0xFFFFFF);
 			}
@@ -124,7 +148,7 @@ public class GuiArmor extends Gui {
 		if(item instanceof ItemArmor) {
 			this.next += ((ItemArmor) item).damageReduceAmount;
 		} else if(item instanceof ISpecialArmor) {
-			this.next += ((ISpecialArmor) item).getArmorDisplay(mc.thePlayer, stack, slot);
+			this.next += ((ISpecialArmor) item).getArmorDisplay(mc.player, stack, slot);
 		}
 
 		return addBreak;
@@ -182,14 +206,15 @@ public class GuiArmor extends Gui {
 		double maxU = (double) (u + width) / 256.0;
 		double minV = (double) v / 256.0;
 		double maxV = (double) (v + height) / 256.0;
-		
-		Tessellator tessellator = Tessellator.instance;
-		tessellator.startDrawingQuads();
-		tessellator.setColorOpaque_I(this.color);
-		tessellator.addVertexWithUV(x, y + height, this.zLevel, minU, maxV);
-		tessellator.addVertexWithUV(x + width, y + height, this.zLevel, maxU, maxV);
-		tessellator.addVertexWithUV(x + width, y, this.zLevel, maxU, minV);
-		tessellator.addVertexWithUV(x, y, this.zLevel, minU, minV);
+
+		Tessellator tessellator = Tessellator.getInstance(); // Tessellator tessellator = Tessellator.instance;
+		BufferBuilder worldRenderer = tessellator.getBuffer();
+		worldRenderer.begin(7, DefaultVertexFormats.POSITION_TEX); // tessellator.startDrawingQuads();
+		// tessellator.setColorOpaque_I(this.color);
+		worldRenderer.pos(x, y + height, this.zLevel).tex(minU, maxV).endVertex(); // tessellator.addVertexWithUV(x, y + height, this.zLevel, minU, maxV);
+		worldRenderer.pos(x + width, y + height, this.zLevel).tex(maxU, maxV).endVertex(); // tessellator.addVertexWithUV(x + width, y + height, this.zLevel, maxU, maxV);
+		worldRenderer.pos(x + width, y, this.zLevel).tex(maxU, minV).endVertex(); // tessellator.addVertexWithUV(x + width, y, this.zLevel, maxU, minV);
+		worldRenderer.pos(x, y, this.zLevel).tex(minU, minV).endVertex(); // tessellator.addVertexWithUV(x, y, this.zLevel, minU, minV);
 		tessellator.draw();
 	}
 

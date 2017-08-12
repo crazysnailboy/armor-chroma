@@ -13,7 +13,6 @@ import static nukeduck.armorchroma.Constants.RENDER_COLOR;
 import static nukeduck.armorchroma.Constants.RENDER_COLOR_DESC;
 import static nukeduck.armorchroma.Constants.RENDER_GLINT;
 import static nukeduck.armorchroma.Constants.RENDER_GLINT_DESC;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -23,7 +22,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+import org.apache.commons.io.FileUtils;
+import com.google.gson.Gson;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
@@ -35,10 +35,6 @@ import nukeduck.armorchroma.parse.IconData;
 import nukeduck.armorchroma.parse.IconData.IconGroup;
 import nukeduck.armorchroma.parse.IconData.IconGroup.ItemEntry;
 import nukeduck.armorchroma.parse.IconData.IconGroup.MaterialEntry;
-
-import org.apache.commons.io.FileUtils;
-
-import com.google.gson.Gson;
 
 public class Config {
 	private Configuration config;
@@ -71,7 +67,7 @@ public class Config {
 	 * @return The icon index found, or {@link #iconDefault} if none was found. */
 	public int getIcon(ItemStack stack) {
 		Item item = stack.getItem();
-		String[] fullName = Item.itemRegistry.getNameForObject(item).split(":");
+		String[] fullName = Item.REGISTRY.getNameForObject(item).toString().split(":");
 
 		IconGroup groupNeedle = new IconGroup();
 		groupNeedle.modid = fullName[0];
