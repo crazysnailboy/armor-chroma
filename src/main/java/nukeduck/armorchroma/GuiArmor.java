@@ -199,22 +199,22 @@ public class GuiArmor extends Gui {
 	 * @param u Texture X coordinate, in pixels
 	 * @param v Texture Y coordinate, in pixels
 	 * @param width The width of the quad to draw, in pixels
-	 * @param height The height of the quad to draw, in pixels
-	 * @param renderColor The color to use while rendering */
+	 * @param height The height of the quad to draw, in pixels */
 	public void drawTexturedModalRectWithColor(int x, int y, int u, int v, int width, int height) {
 		double minU = (double) u / 256.0;
 		double maxU = (double) (u + width) / 256.0;
 		double minV = (double) v / 256.0;
 		double maxV = (double) (v + height) / 256.0;
+		int r = (this.color >> 16) & 0xFF; int g = (this.color >> 8) & 0xFF; int b = (this.color >> 0) & 0xFF;
 
 		Tessellator tessellator = Tessellator.getInstance(); // Tessellator tessellator = Tessellator.instance;
 		BufferBuilder worldRenderer = tessellator.getBuffer();
-		worldRenderer.begin(7, DefaultVertexFormats.POSITION_TEX); // tessellator.startDrawingQuads();
+		worldRenderer.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR); // tessellator.startDrawingQuads();
 		// tessellator.setColorOpaque_I(this.color);
-		worldRenderer.pos(x, y + height, this.zLevel).tex(minU, maxV).endVertex(); // tessellator.addVertexWithUV(x, y + height, this.zLevel, minU, maxV);
-		worldRenderer.pos(x + width, y + height, this.zLevel).tex(maxU, maxV).endVertex(); // tessellator.addVertexWithUV(x + width, y + height, this.zLevel, maxU, maxV);
-		worldRenderer.pos(x + width, y, this.zLevel).tex(maxU, minV).endVertex(); // tessellator.addVertexWithUV(x + width, y, this.zLevel, maxU, minV);
-		worldRenderer.pos(x, y, this.zLevel).tex(minU, minV).endVertex(); // tessellator.addVertexWithUV(x, y, this.zLevel, minU, minV);
+		worldRenderer.pos(x, y + height, this.zLevel).tex(minU, maxV).color(r, g, b, 255).endVertex(); // tessellator.addVertexWithUV(x, y + height, this.zLevel, minU, maxV);
+		worldRenderer.pos(x + width, y + height, this.zLevel).tex(maxU, maxV).color(r, g, b, 255).endVertex(); // tessellator.addVertexWithUV(x + width, y + height, this.zLevel, maxU, maxV);
+		worldRenderer.pos(x + width, y, this.zLevel).tex(maxU, minV).color(r, g, b, 255).endVertex(); // tessellator.addVertexWithUV(x + width, y, this.zLevel, maxU, minV);
+		worldRenderer.pos(x, y, this.zLevel).tex(minU, minV).color(r, g, b, 255).endVertex(); // tessellator.addVertexWithUV(x, y, this.zLevel, minU, minV);
 		tessellator.draw();
 	}
 
